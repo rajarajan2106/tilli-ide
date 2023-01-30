@@ -5,6 +5,7 @@ import ImageSelect from '../../Component/ImageSelect';
 import CheckedLayoutForm from './CheckedLayoutForm';
 import RecordLayoutForm from './RecordLayoutForm';
 import ReSetTextLayoutForm from './ReSetTextLayoutForm';
+import UserActionText from './UserActionText';
 
 
 export default class ImageForm extends React.Component {
@@ -12,6 +13,7 @@ export default class ImageForm extends React.Component {
     render() {
         let { layers, layerActive, imageOptions } = this.props;
         let activeLayer = layers[layerActive];
+        let includesUserActionText = ["Previous", "Record", "Record Press", "Reset Text"]
 
         let onClickOptions = MyConfig.themeEvent;
         return <div className="p-2">
@@ -118,6 +120,9 @@ export default class ImageForm extends React.Component {
                                     resetText: []
                                 }
                             }
+                            if (!includesUserActionText.includes(e.value)) {
+                                layers[layerActive].userActionText = ""
+                            }
                             this.props.setValue(layers)
                         }}
                         options={onClickOptions}
@@ -170,6 +175,22 @@ export default class ImageForm extends React.Component {
                             }} />
                     </div>
                 </div>
+                {
+                    (!includesUserActionText.includes(layers[layerActive].action) && layers[layerActive].action) &&
+                    <div className="col-4">
+                        <div className="mt-3">
+                            <UserActionText
+                                setValue={(value) => {
+                                    layers[layerActive].userActionText = value;
+                                    this.props.setValue(layers)
+                                }}
+                                layers={layers}
+                                layerActive={layerActive}
+                                userActionText={layers[layerActive].userActionText ? layers[layerActive].userActionText : ""}
+                            />
+                        </div>
+                    </div>
+                }
             </div>
         </div>;
     }

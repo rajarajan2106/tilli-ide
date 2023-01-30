@@ -3,11 +3,13 @@ import MyConfig from '../../../../config/MyConfig';
 import DropDown from '../../../../Component/DropDown';
 import EditorContent from '../../Component/EditorContent';
 import CheckedLayoutForm from './CheckedLayoutForm';
+import UserActionText from './UserActionText';
 
 export default class TextForm extends React.Component {
     render() {
         let { layers, layerActive } = this.props;
         let activeLayer = layers[layerActive];
+        let includesUserActionText = ["Previous", "Record", "Record Press", "Reset Text"]
 
         let onClickOptions = MyConfig.themeEvent;
         return <div className="p-2">
@@ -96,6 +98,9 @@ export default class TextForm extends React.Component {
                                     hidden: []
                                 }
                             }
+                            if (!includesUserActionText.includes(e.value)) {
+                                layers[layerActive].userActionText = ""
+                            }
                             this.props.setValue(layers)
                         }}
                         options={onClickOptions}
@@ -128,6 +133,22 @@ export default class TextForm extends React.Component {
                             }} />
                     </div>
                 </div>
+                {
+                    (!includesUserActionText.includes(layers[layerActive].action) && layers[layerActive].action) &&
+                    <div className="col-4">
+                        <div className="mt-3">
+                            <UserActionText
+                                setValue={(value) => {
+                                    layers[layerActive].userActionText = value;
+                                    this.props.setValue(layers)
+                                }}
+                                layers={layers}
+                                layerActive={layerActive}
+                                userActionText={layers[layerActive].userActionText ? layers[layerActive].userActionText : ""}
+                            />
+                        </div>
+                    </div>
+                }
             </div>
         </div>;
     }

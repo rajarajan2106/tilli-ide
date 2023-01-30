@@ -321,7 +321,8 @@ export default class ModuleManagerIDE extends React.Component {
       selectAudioFiles: "",
       audioJsonFiles: {},
       sectionAudioSelected: {},
-      storySelectAudioFiles: {}
+      storySelectAudioFiles: {}, 
+      welcomeScreenCheck: true,
     }
 
     this.setThemeSelected = this.setThemeSelected.bind(this);
@@ -335,11 +336,11 @@ export default class ModuleManagerIDE extends React.Component {
     this.setState({
       deviceHeight: height,
       deviceWidth: width,
-    }, () => {
-      this.getThemes()
-      this.getImages()
-      this.getAudioFils()
-      this.getLevels()
+    }, async() => {
+      await this.getImages()
+      await this.getAudioFils()
+      await this.getThemes()
+      await this.getLevels()
     });
   }
 
@@ -435,16 +436,16 @@ export default class ModuleManagerIDE extends React.Component {
 
 
   async submitFuntion() {
-    const { sectionLearning, sectionBuildStory } = this.state
+    const { sectionLearning, sectionBuildStory,welcomeScreenCheck } = this.state
 
     if (sectionBuildStory.length === 0 && sectionLearning.length === 0) {
       alert("Add story")
       return false
     }
-
     // let addData = { sectionLearning, sectionBuildStory };
     let addData = [...sectionLearning, ...sectionBuildStory];
-    let postJson = { levelId: this.state.levelSelect.value, stagesData: JSON.stringify(addData), sessionId: '1223' };
+    let stagesData = { welcomeScreen: welcomeScreenCheck, stage: addData }
+    let postJson = { levelId: this.state.levelSelect.value, stagesData: JSON.stringify(stagesData), sessionId: '1223' };
     let responseData = await doConnect("updateLevelMapping", "POST", postJson);
     var json = responseData;
     var response = json.response;
@@ -478,36 +479,44 @@ export default class ModuleManagerIDE extends React.Component {
         select_Level.value = level_Id;
         select_Level.label = levelsMap[level_Id].name;
       }
-
-
-      that.setState({ levelsJson: levelsMap, levelSelect: select_Level })
-
-      this.getLevelMappingData(level_Id)
+      that.setState({ levelsJson: levelsMap, levelSelect: select_Level }, () => {
+        this.getLevelMappingData(level_Id)
+      })
 
     }
   }
 
 
   async getLevelMappingData(levelId) {
+    let { welcomeScreenCheck } = this.state
     const { storyThemeSelect } = this.state;
     let { audioFiles } = this.state
-    console.log('levelId', levelId)
     let postJson = { levelId: levelId, sessionId: '1223' };
     let that = this;
     let responseData = await doConnect("getLevelMappingData", "POST", postJson);
-
+    console.log("responseData",responseData)
     // alert(JSON.stringify(responseData))
-    let contentdata = responseData.response;
-    if (contentdata) {
+     let getStageData = responseData.response;
+        let contentdata = []
+        if (getStageData) {
+          getStageData = JSON.parse(getStageData);
+          /*restructure change */
+          if (Array.isArray(getStageData) || typeof (getStageData.welcomeScreen) === "undefined") {
+            getStageData = { welcomeScreen: true, stage: getStageData }
+          }
+          /*restructure change */
+        }
+    if (getStageData)  {
+      welcomeScreenCheck = getStageData.welcomeScreen
+      contentdata = getStageData.stage;
       let imageViews = []
       let withOutStory = []
       let withStory = []
       let changeIndex = 0
-
       let sectionAudioSelected = {}
       let storySelectAudioFiles = {}
-
-      contentdata = JSON.parse(contentdata);
+      // contentdata = JSON.parse(contentdata);
+      console.log(this.state.themeOptions)
       if (Array.isArray(contentdata)) {
         contentdata.map((ival, index) => {
           var found_index = this.state.themeOptions.findIndex((a) =>
@@ -516,7 +525,15 @@ export default class ModuleManagerIDE extends React.Component {
 
           if (ival.themeType && ival.themeType === "Dynamic") {
             if (ival.backgroundAudio && ival.backgroundAudio !== "") {
-              let filterAudioIndex = audioFiles.findIndex((e) => { return e.json.previewAudioPath === ival.backgroundAudio })
+              let prevAudPath = ival.backgroundAudio;
+                  let findAudPath = ""
+                  let splitAnd = prevAudPath.split("&")[1]
+                  if (splitAnd) {
+                    splitAnd = splitAnd.split("key=");
+                    findAudPath = splitAnd[1];
+                  }
+              let filterAudioIndex = audioFiles.findIndex((e) => {
+                return e.json.fileName === findAudPath })
               if (filterAudioIndex !== "-1") {
                 let selectedFile = audioFiles[filterAudioIndex]
                 sectionAudioSelected[index] = { ...selectedFile }
@@ -575,7 +592,8 @@ export default class ModuleManagerIDE extends React.Component {
         imageView: imageViews,
         storyThemeSelect,
         sectionAudioSelected,
-        storySelectAudioFiles
+        storySelectAudioFiles,
+        welcomeScreenCheck
       }, () => {
         that.historyCapture()
       })
@@ -1241,7 +1259,6 @@ export default class ModuleManagerIDE extends React.Component {
 
   storyCardRemove(value) {
     const { sectionBuildStory } = this.state;
-    console.log(value)
     delete sectionBuildStory[value]
     let { storySelectAudioFiles } = this.state
     let RemoveData = sectionBuildStory.filter(function (el) {
@@ -1279,8 +1296,8 @@ export default class ModuleManagerIDE extends React.Component {
       let value = [...sectionBuildStory]
       let themeValue = [...storyThemeSelect]
 
-      console.log('index', index)
-      console.log('Move index', index + 1)
+      // console.log('index', index)
+      // console.log('Move index', index + 1)
       // console.log(index, "--", sectionBuildStory[index])
       // console.log(index + 1, "--", sectionBuildStory[index + 1])
 
@@ -1301,8 +1318,8 @@ export default class ModuleManagerIDE extends React.Component {
       let value = [...sectionBuildStory]
       let themeValue = [...storyThemeSelect]
 
-      console.log('index', index)
-      console.log('Move index', index - 1)
+      // console.log('index', index)
+      // console.log('Move index', index - 1)
 
       value[index] = sectionBuildStory[index - 1]
       value[index - 1] = sectionBuildStory[index]
@@ -1606,7 +1623,7 @@ export default class ModuleManagerIDE extends React.Component {
       let index = themeIndex;
       let chooseDataview = "";
       let selectBoxConditon = "";
-      console.log(sectionLearning[index])
+      // console.log(sectionLearning[index])
       if (!sectionLearning[index]) {
         return false
       }
@@ -2658,7 +2675,7 @@ export default class ModuleManagerIDE extends React.Component {
   }
 
   render() {
-    const { sectionTab, sectionLearning, sectionBuildStory, themeIndex, previewModal, moduleJson, cloneModal, cloneLevelSelect } = this.state;
+    const { sectionTab, sectionLearning, sectionBuildStory, themeIndex, previewModal, moduleJson, cloneModal, cloneLevelSelect,welcomeScreenCheck } = this.state;
 
     let levelOption = [];
     Object.keys(this.state.levelsJson).map((ival, index) => {
@@ -2704,6 +2721,16 @@ export default class ModuleManagerIDE extends React.Component {
                           <span style={{ color: 'red', fontSize: 12, float: 'inherit', marginTop: 10 }}>{this.state.errorlevelSelect}</span>
                         </div>
                         <div className="col-sm-6"> </div>
+                      </div>
+                      <div className="row item form-group" >
+                        <div className="col-sm-5">Welcome Screen
+                          <span className='ml-3'>
+                            <input type={"checkbox"} checked={welcomeScreenCheck} onChange={(e) => {
+                              welcomeScreenCheck = e.target.checked;
+                              this.setState({ welcomeScreenCheck })
+                            }} />
+                          </span>
+                        </div>
                       </div>
                       <div className="my-3">
                         <div className="tabs">

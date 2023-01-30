@@ -19,7 +19,8 @@ class Level extends React.Component {
             buttonName: "Submit",
             sortOrder: '',
             defineModule: false,
-            sortOrderArray: []
+            sortOrderArray: [],
+            editSortOrder:''
         }
     }
 
@@ -143,8 +144,12 @@ class Level extends React.Component {
     }
 
     async updateLevels() {
-        const { levelName, levelColor, sortOrder, sortOrderArray } = this.state;
+        const { levelName, levelColor, sortOrder, sortOrderArray,editSortOrder } = this.state;
         let validLength = levelColor ? levelColor.search("#") : 0;
+        let sortOrderIndex = sortOrderArray.indexOf(editSortOrder.toString())
+        if(sortOrderIndex > -1){
+            sortOrderArray.splice(sortOrderIndex,1)
+        }
         if (levelName.length === 0) {
             this.setState({ levelNameValidate: 'Please Enter Value' })
             return false
@@ -276,7 +281,7 @@ class Level extends React.Component {
                             let levelName = this.state.gamingArray[e.target.id].name
                             let levelColor = this.state.gamingArray[e.target.id].color
                             let sortOrder = this.state.gamingArray[e.target.id].sortOrder
-                            this.setState({ defineModule: true, buttonName: 'Update', selectedOption: object, typeSelect: 'Edit', idvalue: e.target.id, levelColor, levelName, sortOrder })
+                            this.setState({ defineModule: true, buttonName: 'Update', selectedOption: object, typeSelect: 'Edit', idvalue: e.target.id, levelColor, levelName, sortOrder,editSortOrder:sortOrder })
                         }}>Edit</button>
                     </div>,
             },
@@ -435,7 +440,6 @@ class Level extends React.Component {
                                                                 }
                                                             </div>
                                                         </div>
-
                                                     </div>
                                                     <div className="col-4" style={{ height: 200 }}>
                                                         {
@@ -466,7 +470,6 @@ class Level extends React.Component {
                                                                         <div className="col-sm-4"> </div>
                                                                     </div>
                                                                 </React.Fragment>}
-
                                                         </div>
                                                     </div>
                                                 </div>
